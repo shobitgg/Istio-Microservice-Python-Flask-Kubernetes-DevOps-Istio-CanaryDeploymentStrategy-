@@ -1,4 +1,4 @@
-Canary Deployment of Kubernets based application using Istio Deployment strategy , helm 
+Canary Deployment of Kubernets based application using Istio Deployment strategy , helm , Virtual Service , Destination Rules
 ## How Istio Works 
 
 Following APIs are supported in Istio -

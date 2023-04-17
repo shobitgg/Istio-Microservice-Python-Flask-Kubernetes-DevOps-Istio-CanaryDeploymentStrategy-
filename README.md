@@ -1,9 +1,4 @@
-# istio
-https://github.com/arunksingh16/istio
-
-https://python.plainenglish.io/istio-traffic-management-demo-using-python-flask-based-webservices-part-1-55cd9390932f | https://arunksingh16.medium.com/istio-canary-deployment-for-python-flask-based-webservices-2eb86c873f64 https://medium.com/codex/getting-started-with-service-mesh-and-istio-3c8af1836454
-
-
+Canary Deployment of Kubernets based application using Istio Deployment strategy , helm 
 ## How Istio Works 
 
 Following APIs are supported in Istio -

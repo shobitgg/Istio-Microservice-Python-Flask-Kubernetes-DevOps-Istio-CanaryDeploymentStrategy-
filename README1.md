@@ -408,10 +408,12 @@ $ while true; do curl -s -HHost:flask.example.com http://10.0.1.6:31688/home | g
 Load Generate using Hey HTTP load generator
 
 You can use a lightweight load generator hey as well. This tool is pretty powerful and can be used in these scenarios easily.
+
 ```
 wget https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64
 sudo mv hey_linux_amd64 /usr/bin/hey
 $ hey -m GET -H "Host: flask.example.com" -z 15s -host "flask.example.com" http://10.0.1.6:31688/home
+```
 ```
 
 
@@ -424,7 +426,7 @@ Again similar results we received from Hey as well. But to verify it, we will us
 
 Traffic distribution 50/50%
 Now update the virtual service again and put 50 in weight for both versions and view in Kiali.
-```
+
 ```
 route:
     - destination:

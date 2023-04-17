@@ -416,7 +416,7 @@ wget https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64
 sudo mv hey_linux_amd64 /usr/bin/hey
 $ hey -m GET -H "Host: flask.example.com" -z 15s -host "flask.example.com" http://10.0.1.6:31688/home
 ```
-```
+
 
 
 ![image](https://user-images.githubusercontent.com/41900814/232414189-40d6153b-ecf8-4d70-8cea-80a8ac8c9803.png)

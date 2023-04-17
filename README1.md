@@ -31,6 +31,7 @@ $ kubectl label namespace default istio-injection=enabled
 ![image](https://user-images.githubusercontent.com/41900814/232405758-0c7bb558-d3dd-4075-b10b-985fa70b5048.png)
 
 
+
 Now our namespace is ready for demo app deployment.
 
 ## Demo App Deployment
@@ -274,4 +275,171 @@ while true; do curl -HHost:flask.example.com http://10.0.1.6:31688/list; sleep 1
 
 ![image](https://user-images.githubusercontent.com/41900814/232407992-c8e5e693-1b3d-4443-bf98-42ec4888d501.png)
 
+
+It's time to verify our existing Istio components and Application state.
+![image](https://user-images.githubusercontent.com/41900814/232413041-4ec966da-08eb-47d3-8bf6-b08129951ed6.png)
+
+Using proxy-status you can get an overview of your mesh
+```
+istioctl proxy-status
+```
+
+
+![image](https://user-images.githubusercontent.com/41900814/232413173-050e18ec-8a91-4dd6-8d4b-1c15251125cd.png)
+
+State of Istio specific components —
+```
+$ istioctl proxy-config route istio-ingressgateway-5dc645f586-84bvf -n istio-system
+
+```
+
+![image](https://user-images.githubusercontent.com/41900814/232413211-6ba8fc26-19b6-4630-9680-d8c6aa7f6ef9.png)
+
+```
+Please note istionctl proxy-config route <pod name> is a very powerful command. It fetches route configuration for the Envoy instance in the specified pod.
+
+Let’s test our service using Gateway.
+
+
+```
+$ curl -s -I -HHost:flask.example.com http://10.0.1.6:31688/home
+```
+
+![image](https://user-images.githubusercontent.com/41900814/232413314-57a44d0c-5487-405a-8fc0-385305c24d02.png)
+
+```
+
+Let’s have a visualization in Kiali -
+![image](https://user-images.githubusercontent.com/41900814/232413349-b604841e-7cc9-4d4c-931f-48f7026cb228.png)
+
+```
+
+
+
+## Canary Deployment
+Canary deployment is a deployment strategy that releases an application or service incrementally to a subset of users who are exposed to new updates before others. These users identity the release is good to proceed for full rollout or not.
+
+Istio, as a service mesh supports routing rules to be applied to all services in the mesh, not just to ingress traffic. Using this capability we can implement Canary deployment easily. Canary deployments in Istio cab be configured using following items:
+
+virtual service ( will be used to specify relative weights)
+destination rule ( will be used to define subsets of the target service based on version labels.)
+
+
+I have prepared another docker image v2 of our app with a slight change in text on the home page. This image will be used for target release.
+
+The deployment will be a canary deployment using Istio. We will use Istio to shift traffic from one version of an app to another gradually. We will configure a sequence of routing rules that redirect a percentage of traffic from one destination to another using Virtual Services and Destination Rules.
+
+
+Steps —
+
+1. Deploy another version of the application without removing the existing application
+2. Update existing VirtualService and add another object DestinationRule support weight-based routing. Destination Rule defines additional, version-based policies to the routing rules you are applying to your app.
+
+```
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: flaskvirtualservice
+spec:
+  hosts:
+  - "flask.example.com" # destination hosts to which traffic is being sent. The hosts field applies to both HTTP and TCP services
+  gateways:
+  - flask-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /list
+    - uri:
+        prefix: /home
+    route:
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v1
+        port:
+          number: 5000
+      weight: 90
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v2 #  default to pods of the flaskfrontend service with label “version: v1” (i.e., subset v1)
+        port:
+          number: 5000
+      weight: 10
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: flaskdestinationrule
+spec:
+  host: flaskfrontend.default.svc.cluster.local
+  subsets:
+  - name: v1
+    labels:
+      version: v1 # this is latest tag in our image
+  - name: v2
+    labels:
+      version: v2
+```
+
+In the above VirtualServiceobject, check the route details for HTTP context root. We have two destination rules defined. One is having a weight of 90 and the subset is v1 and another one is 10 and the subset is v2. DestinationRule defines the labels of the target service based on version labels. So subset v1 is forwarding requests to current version of live application and v2 is the canary which we are releasing in the system gradually.
+
+
+Let’s do the deployment for new updated app first.
+![image](https://user-images.githubusercontent.com/41900814/232413873-76c8ba4d-825d-4d9d-999a-0a5a8b28ef22.png)
+
+
+
+Now we can see the 2 pods of the frontend app are running. One with version 1 and another with version 2. It time to play with Istio now.
+
+We will deploy updated Virtual Service and DestinationRules for weight-based routing first. It will modify the route rules and send 90% of connections to v1 of application and 10% to updated version.
+
+![image](https://user-images.githubusercontent.com/41900814/232414003-746aa78b-475f-4182-9d05-646aa12817fd.png)
+
+It’s time to test it. The best way I can advise is to use curl or any load generator. Please note you need to pass one hostname as a header so if you use browser then make sure you have a plugin to add custom header.
+
+Load Generate using curl
+
+This can generate a number of request very quickly. I have filtered the output using grep so that exact version can be printed.
+
+```
+$ while true; do curl -s -HHost:flask.example.com http://10.0.1.6:31688/home | grep -i "testing v"; sleep 0.5; done
+```
+  
+  ![image](https://user-images.githubusercontent.com/41900814/232414108-a8fd8972-2ccf-411e-b01d-ec06d7f8d5cd.png)
+Load Generate using Hey HTTP load generator
+
+You can use a lightweight load generator hey as well. This tool is pretty powerful and can be used in these scenarios easily.
+```
+wget https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64
+sudo mv hey_linux_amd64 /usr/bin/hey
+$ hey -m GET -H "Host: flask.example.com" -z 15s -host "flask.example.com" http://10.0.1.6:31688/home
+```
+
+
+![image](https://user-images.githubusercontent.com/41900814/232414189-40d6153b-ecf8-4d70-8cea-80a8ac8c9803.png)
+
+
+Again similar results we received from Hey as well. But to verify it, we will use Kiali dashboard to display or monitor.
+![image](https://user-images.githubusercontent.com/41900814/232414259-16d93b55-b3f2-4951-9e58-ba60bf685c74.png)
+
+
+Traffic distribution 50/50%
+Now update the virtual service again and put 50 in weight for both versions and view in Kiali.
+```
+route:
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v1
+        port:
+          number: 5000
+      weight: 50
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v2 #  default to pods of the flaskfrontend service with label “version: v1” (i.e., subset v1)
+        port:
+          number: 5000
+      weight: 50
+```
+
+
+![image](https://user-images.githubusercontent.com/41900814/232414474-2ea26b47-18be-43c9-a3c1-7a0b44a00000.png)
 

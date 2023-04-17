@@ -1,0 +1,53 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: flaskvirtualservice
+spec:
+  hosts:
+  - "flask.example.com" # destination hosts to which traffic is being sent. The hosts field applies to both HTTP and TCP services
+  gateways:
+  - flask-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /list
+    - uri:
+        prefix: /home
+    route:
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v1
+        port:
+          number: 5000
+      weight: 90
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v2 #  default to pods of the flaskfrontend service with label “version: v1” (i.e., subset v1)
+        port:
+          number: 5000
+      weight: 10
+  - match:
+    - headers:
+        canary:
+          exact: "canary"
+    route:
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v2
+        port:
+          number: 5000
+      weight: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: flaskdestinationrule
+spec:
+  host: flaskfrontend.default.svc.cluster.local
+  subsets:
+  - name: v1
+    labels:
+      version: v1 # this is latest tag in our image
+  - name: v2
+    labels:
+      version: v2

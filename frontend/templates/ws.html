@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}
+  Home Page
+{% endblock %}
+{% block content %}
+<h3> This section fetches data from books backend webservices </h3>
+    <table class="table">
+      <thead class="thead-dark">
+        <tr>
+          <th scope="col">id</th>
+          <th scope="col">title</th>
+          <th scope="col">author</th>
+          <th scope="col">year_published</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for x in jdt %}
+        <tr>
+          <th scope="row">{{ x['id'] }}</th>
+          <td>{{ x['title'] }}</td>
+          <td>{{ x['author'] }}</td>
+          <td>{{ x['year_published'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+</p>
+
+<h3> This section fetches data from cars backend webservices </h3>
+    <table class="table">
+      <thead class="thead-dark">
+        <tr>
+          <th scope="col">id</th>
+          <th scope="col">name</th>
+          <th scope="col">car</th>
+          <th scope="col">color</th>
+          <th scope="col">bought</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for y in jdt1 %}
+        <tr>
+          <th scope="row">{{ y['id'] }}</th>
+          <td>{{ y['name'] }}</td>
+          <td>{{ y['car'] }}</td>
+          <td>{{ y['color'] }}</td>
+          <td>{{ y['bought'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+{% endblock %}
+

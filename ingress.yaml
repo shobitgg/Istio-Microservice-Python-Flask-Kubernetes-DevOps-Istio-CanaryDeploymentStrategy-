@@ -1,0 +1,35 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: flask-gateway
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "flask.example.com"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: flaskvirtualservice
+spec:
+  hosts:
+  - "flask.example.com"
+  gateways:
+  - flask-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /list
+    - uri:
+        prefix: /home
+    route:
+    - destination:
+        port:
+          number: 5000
+        host: flaskfrontend.default.svc.cluster.local  # destination hosts to which traffic is being sent. The hosts field applies to both HTTP and TCP services

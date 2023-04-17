@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flaskfrontend
+  labels:
+    app: flaskfrontend
+    version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: flaskfrontend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: flaskfrontend
+        version: v1
+    spec:
+      containers:
+      - name: flaskfrontend
+        image: "singharunk/flaskfrontend:latest"
+        imagePullPolicy: "Always"
+        env:
+          - name: nspace
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: SERVICE_X
+            value: "flaskbackend.$(nspace).svc.cluster.local"
+          - name: SERVICE_X_PORT
+            value: "6000"
+        ports:
+        - containerPort: 5000
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flaskbackend
+  labels:
+    app: flaskbackend
+    version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: flaskbackend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: flaskbackend
+        version: v1
+    spec:
+      containers:
+      - name: flaskbackend
+        image: "singharunk/flaskbackend:latest"
+        imagePullPolicy: "Always"
+        ports:
+        - containerPort: 6000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flaskfrontend
+  labels:
+    app: flaskfrontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5000
+      protocol: TCP
+      name: http
+      targetPort: 5000
+  selector:
+    app: flaskfrontend
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: flaskbackend
+  labels:
+    app: flaskbackend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6000
+      protocol: TCP
+      name: http
+      targetPort: 6000
+  selector:
+    app: flaskbackend

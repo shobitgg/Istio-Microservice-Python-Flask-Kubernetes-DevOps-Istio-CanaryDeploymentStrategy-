@@ -1,0 +1,86 @@
+# the kubernetes deployment YAML for canary deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flaskfrontend-v2
+  labels:
+    app: flaskfrontend
+    version: v2
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: flaskfrontend
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: flaskfrontend
+        version: v2
+    spec:
+      containers:
+      - name: flaskfrontend
+        image: "singharunk/flaskfrontend:v2"
+        imagePullPolicy: "Always"
+        env:
+          - name: nspace
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: SERVICE_X
+            value: "flaskbackend.$(nspace).svc.cluster.local"
+          - name: SERVICE_X_PORT
+            value: "6000"
+        ports:
+        - containerPort: 5000
+
+
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: flaskvirtualservice
+spec:
+  hosts:
+  - "flask.example.com" # destination hosts to which traffic is being sent. The hosts field applies to both HTTP and TCP services
+  gateways:
+  - flask-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /list
+    - uri:
+        prefix: /home
+    route:
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v1
+        port:
+          number: 5000
+      weight: 90
+    - destination:
+        host: flaskfrontend.default.svc.cluster.local
+        subset: v2 #  default to pods of the flaskfrontend service with label “version: v1” (i.e., subset v1)
+        port:
+          number: 5000
+      weight: 10
+
+---     
+
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: flaskdestinationrule
+spec:
+  host: flaskfrontend.default.svc.cluster.local
+  subsets:
+  - name: v1
+    labels:
+      version: v1 # this is latest tag in our image
+  - name: v2
+    labels:
+      version: v2

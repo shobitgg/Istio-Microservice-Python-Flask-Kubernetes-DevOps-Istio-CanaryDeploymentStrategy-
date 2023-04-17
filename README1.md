@@ -425,6 +425,7 @@ Again similar results we received from Hey as well. But to verify it, we will us
 Traffic distribution 50/50%
 Now update the virtual service again and put 50 in weight for both versions and view in Kiali.
 ```
+```
 route:
     - destination:
         host: flaskfrontend.default.svc.cluster.local

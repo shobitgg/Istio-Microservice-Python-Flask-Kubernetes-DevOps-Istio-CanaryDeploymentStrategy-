@@ -268,18 +268,21 @@ kubectl get service istio-ingressgateway -n istio-system -o jsonpath='{.spec.por
 
 Let’s visualize it in Kiali for better understanding.
 
-# shell script
+## shell script
+```
 while true; do curl -HHost:flask.example.com http://10.0.1.6:31688/list; sleep 1; done
-
+```
 
 
 ![image](https://user-images.githubusercontent.com/41900814/232407992-c8e5e693-1b3d-4443-bf98-42ec4888d501.png)
 
 
 It's time to verify our existing Istio components and Application state.
+
 ![image](https://user-images.githubusercontent.com/41900814/232413041-4ec966da-08eb-47d3-8bf6-b08129951ed6.png)
 
 Using proxy-status you can get an overview of your mesh
+
 ```
 istioctl proxy-status
 ```
@@ -295,7 +298,7 @@ $ istioctl proxy-config route istio-ingressgateway-5dc645f586-84bvf -n istio-sys
 
 ![image](https://user-images.githubusercontent.com/41900814/232413211-6ba8fc26-19b6-4630-9680-d8c6aa7f6ef9.png)
 
-```
+
 Please note istionctl proxy-config route <pod name> is a very powerful command. It fetches route configuration for the Envoy instance in the specified pod.
 
 Let’s test our service using Gateway.
@@ -307,12 +310,11 @@ $ curl -s -I -HHost:flask.example.com http://10.0.1.6:31688/home
 
 ![image](https://user-images.githubusercontent.com/41900814/232413314-57a44d0c-5487-405a-8fc0-385305c24d02.png)
 
-```
 
 Let’s have a visualization in Kiali -
 ![image](https://user-images.githubusercontent.com/41900814/232413349-b604841e-7cc9-4d4c-931f-48f7026cb228.png)
 
-```
+
 
 
 
